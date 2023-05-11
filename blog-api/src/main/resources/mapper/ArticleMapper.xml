@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mszlu.dao.mapper.ArticleMapper">
+    <!--使用insert，updata，delete，select等标签写sql语句
+
+     /*存在数据库的时间时毫秒数，从毫秒数中提取出 年月*/-->
+
+    <select id="listArchives" resultType="com.mszlu.dao.dos.Archives">
+
+        SELECT
+            FROM_UNIXTIME( create_date / 1000, '%Y' ) AS YEAR,
+            FROM_UNIXTIME( create_date / 1000, '%m' ) AS MONTH,
+            COUNT(*) AS COUNT
+        FROM
+            ms_article
+        GROUP BY
+            YEAR,
+            MONTH
+    </select>
+    <!--将表中列名与实体类属性一一对应-->
+    <resultMap id="articleMap" type="com.mszlu.entity.Article">
+        <id column="id" property="id" />
+        <result column="author_id" property="authorId"/>
+        <result column="comment_counts" property="commentCounts"/>
+        <result column="create_date" property="createDate"/>
+        <result column="summary" property="summary"/>
+        <result column="title" property="title"/>
+        <result column="view_counts" property="viewCounts"/>
+        <result column="weight" property="weight"/>
+        <result column="body_id" property="bodyId"/>
+        <result column="category_id" property="categoryId"/>
+    </resultMap>
+    <!--
+    Long categoryId,
+                               Long tagId,
+                               String year,
+                               String month);
+    -->
+    <select id="listArticle" resultType="com.mszlu.entity.Article" resultMap="articleMap">
+      select * from ms_article
+        <where>
+            1 = 1
+            <if test="categoryId != null">
+                and category_id=#{categoryId}
+            </if>
+            <if test="tagId != null">
+                and id in (select article_id from ms_article_tag where tag_id=#{tagId})
+            </if>
+            <if test="year != null and year.length>0 and month != null and month.length>0">
+                and (FROM_UNIXTIME(create_date/1000,'%Y') =#{year} and FROM_UNIXTIME(create_date/1000,'%m')=#{month})
+            </if>
+        </where>
+        order by weight desc,create_date desc
+    </select>
+    <!--
+    /*year和month是String 类型，可能是空串，所以要判断length*/
+    /*1.NULL:代表声明了一个空对象,不是一个字符串,可以赋给任何对象。 空字符:代表声明了一个对象实例,这个对象实例的值是一个长度为0的空字符串。*/
+    -->
+</mapper>
